@@ -1,8 +1,0 @@
-{
-  "package_name": "fairino_msgs",
-  "non_idl_tuples": [
-    "/home/yh_ros2/rus_back_end/src/frcobot_ros2/fairino_msgs:srv/RemoteCmdInterface.srv",
-    "/home/yh_ros2/rus_back_end/src/frcobot_ros2/fairino_msgs:srv/RemoteScriptContent.srv",
-    "/home/yh_ros2/rus_back_end/src/frcobot_ros2/fairino_msgs:msg/RobotNonrtState.msg"
-  ]
-}
