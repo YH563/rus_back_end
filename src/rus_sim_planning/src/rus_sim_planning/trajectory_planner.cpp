@@ -61,6 +61,7 @@ namespace TrajectoryPlanner {
 
     bool TrajectoryPlanner::GenerateTrajectory()
     {
-
+        // TODO
+        return true;
     }
 }
