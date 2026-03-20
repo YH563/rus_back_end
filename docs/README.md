@@ -8,7 +8,7 @@ RUS-Sim（Robotic Ultrasound Simulator）是一个面向超声扫查机械臂的
 
 ### 系统环境要求
 - **Ubuntu** 22.04
-- **CMake** 3.26.0
+- **CMake** 3.18+
 
 ### 安装 ROS2 Humble 
 - 安装教程见 [ROS 2 Documentation](https://docs.ros.org/en/humble/index.html)
@@ -17,6 +17,7 @@ RUS-Sim（Robotic Ultrasound Simulator）是一个面向超声扫查机械臂的
 - **libigl** 2.5.0 (已在项目内)
 - **Eigen3** 3.4.0
 - **PCL** 1.21.1
+- **pcl_conversions** 2.4.5
 
 ## 项目结构
 采用标准的 ROS2 工作空间布局，主要功能组织为多个功能包。

@@ -1,7 +1,7 @@
 #include "rus_sim_planner/trajectory_planner.hpp"
 
 namespace TrajectoryPlanner {
-    bool TrajectoryPlanner::Initialize(const SE3 &start, const SE3 &goal, const PointCloud3d &point_cloud, double total_time, double time_step)
+    bool TrajectoryPlanner::Initialize(const SE3 &start, const SE3 &goal, const MeshPtr& mesh, double total_time, double time_step)
     {
         if (total_time <= 0.0) {
             RCLCPP_ERROR(rclcpp::get_logger("TrajectoryPlanner"), "总时间必须大于0");
@@ -12,11 +12,23 @@ namespace TrajectoryPlanner {
             return false;
         }
         start_pose_ = start;
-        point_cloud_ = point_cloud;
         goal_pose_ = goal;
+        if (!pclmesh_to_eigen(mesh)) {
+            RCLCPP_ERROR(rclcpp::get_logger("TrajectoryPlanner"), "网格数据转换失败");
+            return false;
+        }
         total_time_ = total_time;
         time_step_ = time_step;
         return true;
+    }
+
+    bool TrajectoryPlanner::pclmesh_to_eigen(const MeshPtr& mesh)
+    {
+        if (mesh->polygons.empty() || mesh->cloud.data.empty()) {
+            RCLCPP_ERROR(rclcpp::get_logger("TrajectoryPlanner"), "输入网格为空");
+            return false;
+        }
+        
     }
 
     std::optional<SE3> TrajectoryPlanner::GetPoseAtTime(double time) const
@@ -69,8 +81,8 @@ namespace TrajectoryPlanner {
             RCLCPP_ERROR(rclcpp::get_logger("TrajectoryPlanner"), "起始位姿和目标位姿不能相同");
             return false;
         }
-        if (point_cloud_.rows() == 0) {
-            RCLCPP_ERROR(rclcpp::get_logger("TrajectoryPlanner"), "点云数据不能为空");
+        if (mesh_data_.first.rows() == 0 || mesh_data_.second.rows() == 0) {
+            RCLCPP_ERROR(rclcpp::get_logger("TrajectoryPlanner"), "三角网格数据不能为空");
             return false;
         }
 
