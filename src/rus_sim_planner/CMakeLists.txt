@@ -19,6 +19,7 @@ find_package(Eigen3 REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(moveit_ros_planning_interface REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(shape_msgs REQUIRED)
 find_package(PCL REQUIRED)
 find_package(rus_sim_interfaces REQUIRED)
 # uncomment the following section in order to fill in
@@ -43,6 +44,7 @@ ament_target_dependencies(planner_core PUBLIC
   moveit_ros_planning_interface
   sensor_msgs
   rus_sim_interfaces
+  shape_msgs
 )
 
 target_link_libraries(planner_core PUBLIC
@@ -73,6 +75,7 @@ ament_target_dependencies(rus_sim_planner PUBLIC
   moveit_ros_planning_interface
   sensor_msgs
   rus_sim_interfaces
+  shape_msgs
 )
 
 target_include_directories(rus_sim_planner PRIVATE

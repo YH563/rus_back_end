@@ -4,37 +4,49 @@ namespace RusTrajectoryPlannerNode
 {
     TrajectoryPlannerNode::TrajectoryPlannerNode() : Node("trajectory_planner_node")
     {
-        planner_ = RusTrajectoryPlanner::TrajectoryPlanner();
-        trajectory_publisher_ = this->create_publisher<rus_sim_interfaces::msg::ScanPath>("trajectory", 10);
-        // timer_ = this->create_wall_timer(
-        //     std::chrono::milliseconds(1000), std::bind(&TrajectoryPlannerNode::publish_path, this)
-        // );
-        
+        // 创建轨迹规划器实例
+        planner_ = std::make_unique<RusTrajectoryPlanner::TrajectoryPlanner>();
+        mesh_subscription_ = this->create_subscription<shape_msgs::msg::Mesh>(
+            "/mesh_data", 10, 
+            std::bind(&TrajectoryPlannerNode::on_mesh_data, this, std::placeholders::_1)
+        );
+        // 创建扫描任务动作服务器
+        scan_action_server_ = rclcpp_action::create_server<ScanTask>(
+            this,
+            "scan_task",
+            std::bind(&TrajectoryPlannerNode::handle_scan_goal, this, std::placeholders::_1, std::placeholders::_2),
+            std::bind(&TrajectoryPlannerNode::handle_scan_cancel, this, std::placeholders::_1),
+            std::bind(&TrajectoryPlannerNode::handle_scan_accepted, this, std::placeholders::_1)
+        );
     }
 
-    void TrajectoryPlannerNode::publish_path()
+    void TrajectoryPlannerNode::on_mesh_data(const MsgMeshPtr& msg)
     {
-        auto trajectory_opt = planner_.GetTrajectory();
-        if (!trajectory_opt) {
-            RCLCPP_ERROR(get_logger(), "无法获取轨迹，发布失败");
+        RCLCPP_INFO(this->get_logger(), "接收到环境网格数据，准备进行轨迹规划");
+        bool is_initialized = planner_->Initialize(msg, 10.0, 0.1);  // 初始化轨迹规划器
+        if (!is_initialized)
+        {
+            RCLCPP_ERROR(this->get_logger(), "轨迹规划器初始化失败！");
             return;
         }
-        const auto& trajectory = trajectory_opt->get();
-        rus_sim_interfaces::msg::ScanPath path_msg;
-        for (const auto& point : trajectory) {
-            geometry_msgs::msg::Pose pose_msg;
-            const auto& se3 = point.first;
-            pose_msg.position.x = se3.translation().x();
-            pose_msg.position.y = se3.translation().y();
-            pose_msg.position.z = se3.translation().z();
-            Eigen::Quaterniond q(se3.rotation());
-            pose_msg.orientation.x = q.x();
-            pose_msg.orientation.y = q.y();
-            pose_msg.orientation.z = q.z();
-            pose_msg.orientation.w = q.w();
-            path_msg.poses.push_back(pose_msg);
-            path_msg.timestamps.push_back(point.second);  // 添加时间戳
-        }
-        trajectory_publisher_->publish(path_msg);
     }
+
+    rclcpp_action::GoalResponse TrajectoryPlannerNode::handle_scan_goal(const rclcpp_action::GoalUUID &uuid, 
+        std::shared_ptr<const ScanTask::Goal> goal)
+    {
+        RCLCPP_INFO(this->get_logger(), "收到新的扫描任务请求");
+        return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;  // 接受并执行
+    }
+
+    rclcpp_action::CancelResponse TrajectoryPlannerNode::handle_scan_cancel(const std::shared_ptr<rclcpp_action::ServerGoalHandle<ScanTask>> goal_handle)
+    {
+        RCLCPP_INFO(this->get_logger(), "扫描任务取消请求");
+        return rclcpp_action::CancelResponse::ACCEPT;  // 接受取消请求
+    }
+
+    void TrajectoryPlannerNode::handle_scan_accepted(const std::shared_ptr<rclcpp_action::ServerGoalHandle<ScanTask>> goal_handle)
+    {
+        RCLCPP_INFO(this->get_logger(), "扫描任务已接受，正在执行...");
+        // 这里可以添加执行扫描任务的逻辑，例如调用轨迹规划器生成轨迹并控制机器人执行
+    }   
 }

@@ -18,7 +18,7 @@ namespace RusPointCloudNode {
         );
 
         // 发布网络数据
-        mesh_publisher_ = this->create_publisher<shape_msgs::msg::Mesh>("/simulated_mesh", 10);
+        mesh_publisher_ = this->create_publisher<shape_msgs::msg::Mesh>("/mesh_data", 10);
 
         RCLCPP_INFO(this->get_logger(), "点云处理节点已启动");
     }

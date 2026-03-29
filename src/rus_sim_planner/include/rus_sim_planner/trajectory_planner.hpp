@@ -3,6 +3,7 @@
 #include <functional> 
 #include <rclcpp/rclcpp.hpp>
 #include <moveit/move_group_interface/move_group_interface.h>
+#include <shape_msgs/msg/mesh.hpp>
 #include <Eigen/Core>
 #include <optional>
 #include <pcl/point_cloud.h>
@@ -17,7 +18,7 @@ namespace RusTrajectoryPlanner {
     using SE3 = Eigen::Isometry3d;  // 位姿矩阵
     using TrajectoryPoint = std::pair<SE3, double>;  // 位姿 + 时间戳
     using Trajectory = std::vector<TrajectoryPoint>;  // 轨迹由多个位姿点组成，每个点包含位姿和时间戳
-    using MeshPtr = pcl::PolygonMeshPtr;  // 三角网格数据指针，为智能指针对象
+    using MsgMeshPtr = shape_msgs::msg::Mesh::SharedPtr;  // 三角网格数据指针
     using VertexMatrix = Eigen::MatrixXd;  // 网格顶点矩阵，每行表示一个顶点的坐标
     using FaceMatrix = Eigen::MatrixXi;  // 网格面矩阵，每行表示一个面的顶点索引
 
@@ -28,9 +29,9 @@ namespace RusTrajectoryPlanner {
         TrajectoryPlanner() = default;
         ~TrajectoryPlanner() = default;
         // 初始化轨迹规划器
-        bool Initialize(const SE3& start, const SE3& goal, const MeshPtr& mesh, double total_time, double time_step = 0.1);
+        bool Initialize(const MsgMeshPtr& mesh, double total_time, double time_step = 0.1);
         // 生成轨迹
-        bool GenerateTrajectory();
+        bool GenerateTrajectory(const SE3& start, const SE3& goal);
         // 获取生成的轨迹
         std::optional<std::reference_wrapper<const Trajectory>> GetTrajectory() const { 
             if (!is_initialized_) {
@@ -49,7 +50,7 @@ namespace RusTrajectoryPlanner {
 
     private:
         // 将PCL网格数据转换为Eigen矩阵，便于 libigl 进行处理计算
-        bool pclmesh_to_eigen(const MeshPtr& mesh);  
+        bool pclmesh_to_eigen(const MsgMeshPtr& mesh);  
 
         // 私有成员变量
         bool is_initialized_ = false;  // 是否已初始化

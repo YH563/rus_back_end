@@ -15,6 +15,7 @@
   <depend>rclcpp</depend>
   <depend>sensor_msgs</depend>
   <depend>moveit_ros_planning_interface</depend>
+  <depend>shape_msgs</depend>
 
   <depend>rus_sim_interfaces</depend>
   <exec_depend>Eigen3</exec_depend>

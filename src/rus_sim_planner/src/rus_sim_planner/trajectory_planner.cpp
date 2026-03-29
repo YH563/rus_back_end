@@ -1,22 +1,16 @@
 #include "rus_sim_planner/trajectory_planner.hpp"
 
 namespace RusTrajectoryPlanner {
-    bool TrajectoryPlanner::Initialize(const SE3 &start, const SE3 &goal, const MeshPtr& mesh, double total_time, double time_step)
+    bool TrajectoryPlanner::Initialize(const MsgMeshPtr& mesh, double total_time, double time_step)
     {
         if (total_time <= 0.0) {
             RCLCPP_ERROR(rclcpp::get_logger("TrajectoryPlanner"), "总时间必须大于0");
-            return false;
-        }
-        if (start.isApprox(goal)) {
-            RCLCPP_ERROR(rclcpp::get_logger("TrajectoryPlanner"), "起始位姿和目标位姿不能相同");
             return false;
         }
         if (time_step <= 0.0) {
             RCLCPP_ERROR(rclcpp::get_logger("TrajectoryPlanner"), "时间步长必须大于0");
             return false;
         }
-        start_pose_ = start;
-        goal_pose_ = goal;
         if (!pclmesh_to_eigen(mesh)) {
             RCLCPP_ERROR(rclcpp::get_logger("TrajectoryPlanner"), "网格数据转换失败");
             return false;
@@ -27,21 +21,16 @@ namespace RusTrajectoryPlanner {
         return true;
     }
 
-    bool TrajectoryPlanner::pclmesh_to_eigen(const MeshPtr& mesh)
+    bool TrajectoryPlanner::pclmesh_to_eigen(const MsgMeshPtr& mesh)
     {
-        if (!is_initialized_) {
-            RCLCPP_ERROR(rclcpp::get_logger("TrajectoryPlanner"), "轨迹规划器未初始化");
-            return false;
-        }
-        if (mesh->polygons.empty() || mesh->cloud.data.empty() || !mesh) {
+        if (mesh->vertices.empty() || mesh->triangles.empty() || !mesh) {
             RCLCPP_ERROR(rclcpp::get_logger("TrajectoryPlanner"), "输入网格为空");
             return false;
         }
-        else {
-            pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
-            pcl::fromPCLPointCloud2(mesh->cloud, *cloud);
-            size_t num_vertices = cloud->size();
-            size_t num_faces = mesh->polygons.size();
+        else 
+        {
+            size_t num_vertices = mesh->vertices.size();
+            size_t num_faces = mesh->triangles.size();
 
             // 创建顶点和面矩阵
             mesh_data_.first.resize(num_vertices, 3);  // 顶点矩阵
@@ -49,18 +38,18 @@ namespace RusTrajectoryPlanner {
 
             // 对顶点矩阵和面矩阵进行填充
             for (size_t i=0; i < num_vertices; ++i) {
-                mesh_data_.first(i, 0) = cloud->points[i].x;
-                mesh_data_.first(i, 1) = cloud->points[i].y;
-                mesh_data_.first(i, 2) = cloud->points[i].z;
+                mesh_data_.first(i, 0) = mesh->vertices[i].x;
+                mesh_data_.first(i, 1) = mesh->vertices[i].y;
+                mesh_data_.first(i, 2) = mesh->vertices[i].z;
             }
             for (size_t i=0; i < num_faces; ++i) {
-                if (mesh->polygons[i].vertices.size() != 3) {
+                if (mesh->triangles[i].vertex_indices.size() != 3) {
                     RCLCPP_ERROR(rclcpp::get_logger("TrajectoryPlanner"), "非三角形面数据不支持");
                     return false;
                 }
-                mesh_data_.second(i, 0) = mesh->polygons[i].vertices[0];
-                mesh_data_.second(i, 1) = mesh->polygons[i].vertices[1];
-                mesh_data_.second(i, 2) = mesh->polygons[i].vertices[2];
+                mesh_data_.second(i, 0) = mesh->triangles[i].vertex_indices[0];
+                mesh_data_.second(i, 1) = mesh->triangles[i].vertex_indices[1];
+                mesh_data_.second(i, 2) = mesh->triangles[i].vertex_indices[2];
             }
             return true;
         }
@@ -118,7 +107,7 @@ namespace RusTrajectoryPlanner {
         }
     }
 
-    bool TrajectoryPlanner::GenerateTrajectory()
+    bool TrajectoryPlanner::GenerateTrajectory(const SE3& start, const SE3& goal)
     {
         if (!is_initialized_) {
             RCLCPP_ERROR(rclcpp::get_logger("TrajectoryPlanner"), "轨迹规划器未初始化");
@@ -136,7 +125,12 @@ namespace RusTrajectoryPlanner {
             RCLCPP_ERROR(rclcpp::get_logger("TrajectoryPlanner"), "三角网格数据不能为空");
             return false;
         }
-
+        if (start.isApprox(goal)) {
+            RCLCPP_ERROR(rclcpp::get_logger("TrajectoryPlanner"), "起始位姿和目标位姿不能相同");
+            return false;
+        }
+        start_pose_ = start;
+        goal_pose_ = goal;
         
         // TODO
         return true;
