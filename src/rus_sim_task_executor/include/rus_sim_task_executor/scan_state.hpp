@@ -1,6 +1,9 @@
 #pragma once
 
 #include "yasmin/state.hpp"
+#include <rclcpp/rclcpp.hpp>
+
+
 
 namespace RusScanState {
 

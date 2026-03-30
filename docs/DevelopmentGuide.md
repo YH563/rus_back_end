@@ -183,3 +183,54 @@ ament_package()
 ---
 
 ## 测试
+
+### CMake 控制测试编译
+在 `CMakeLists.txt` 中使用 `option(ENABLE_TEST ...)` 开关控制是否将测试代码编译进可执行文件。  
+- 默认开启测试（`ON`），方便开发调试。
+- 正式发布时可关闭（`OFF`），减小可执行文件体积。
+- 当 `ENABLE_TEST` 为 `ON` 时，CMake 会自动收集 `test/src/*.cpp` 文件，并添加到主程序的源文件列表中；同时定义宏 `ENABLE_TESTING`，供代码中条件编译。
+
+### 主程序入口与测试模式选择
+主函数（`src/main.cpp`）通过命令行参数 `--test` 决定是否进入测试模式。
+
+- **正常模式**：不传 `--test`，启动核心节点（如点云处理节点），执行实际功能。
+- **测试模式**：传入 `--test`，在核心节点之外，额外启动测试节点（如点云生成器、模拟传感器等），用于模拟数据或验证功能。
+
+**示例代码框架**
+```cpp
+int main(int argc, char **argv)
+{
+    bool test_mode = false;
+    for (int i = 1; i < argc; ++i) {
+        if (std::string(argv[i]) == "--test") {
+            test_mode = true;
+            break;
+        }
+    }
+    // ... 初始化节点等
+#ifdef ENABLE_TESTING
+    if (test_mode) {
+        // 启动测试节点
+        auto test_node = std::make_shared<TestNode>();
+        executor.add_node(test_node);
+    }
+#endif
+    executor.spin();
+}
+```
+
+### 禁止事项
+- **禁止手动编译测试文件**：所有测试必须通过 CMake 和 `colcon` 编译，不得在终端手动调用 `g++` 编译。
+- **禁止在测试文件中包含独立的 `main` 函数**：测试逻辑必须写在测试节点的类中，由主程序统一调用。
+- **禁止将测试代码混入 `src/` 目录**：测试代码必须放在 `test/` 下，与核心源码清晰分离。
+- **禁止在测试节点中硬编码路径**：使用 ROS 2 参数或环境变量传递必要配置。
+
+### 运行测试
+编译后，通过以下命令运行测试模式：
+```bash
+ros2 run your_package your_node --test
+```
+如需正常功能，直接运行：
+```bash
+ros2 run your_package your_node
+```
